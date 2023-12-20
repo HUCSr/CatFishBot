@@ -2,6 +2,7 @@
 import asyncio
 import os
 import time
+import json
 
 import botpy
 from botpy import logging, BotAPI
@@ -52,6 +53,8 @@ async def weak_up(api: BotAPI, message: Message, params=None):
     else :
         return False
 
+LastMessage = None
+
 class MyClient(botpy.Client):
     async def on_ready(self):
         # 准备好了就会调用
@@ -75,9 +78,33 @@ class MyClient(botpy.Client):
 
     # 监听普通消息事件
     async def on_message_create(self, message: Message):
+        global LastMessage
         _log.info(message.author.username + " > " + message.content)
         if "sleep" in message.content:
             await asyncio.sleep(10)
+        ThisMessage = [message.content]
+        Image = []
+        for file in message.attachments:
+            if file.content_type[:5] == "image":
+                Image.append (file.url)
+        ThisMessage.append (Image)
+        if LastMessage != None:
+            with open("recource/reply.json", 'r', encoding='utf-8') as t:
+                reply = json.load(t)
+            if reply.get (LastMessage[0]) == None:
+                reply[LastMessage[0]] = {}
+            if len(LastMessage[1]) > 0:
+                if reply[LastMessage[0]].get(LastMessage[1][0]) == None:
+                    reply[LastMessage[0]][LastMessage[1][0]] = []
+                reply[LastMessage[0]][LastMessage[1][0]].append (ThisMessage)
+            else :
+                if reply[LastMessage[0]].get("NoImage") == None:
+                    reply[LastMessage[0]]["NoImage"] = []
+                reply[LastMessage[0]]["NoImage"].append (ThisMessage)
+            with open("recource/reply.json", 'w', encoding='utf-8') as t:
+                json.dump(reply, t)
+        LastMessage = ThisMessage
+        
     async def test (self) :
         await self.api.post_message(channel_id="634999476", content="测试")
 
