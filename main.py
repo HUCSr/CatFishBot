@@ -57,6 +57,7 @@ class MyClient(botpy.Client):
         # 准备好了就会调用
         _log.info(f"robot 「{self.robot.name}」 on_ready!")
 
+    # 监听at事件
     async def on_at_message_create(self, message: Message):
         _log.info("[" + message.channel_id + "] " + message.author.username + " > " + message.content)
         if "sleep" in message.content:
@@ -69,7 +70,8 @@ class MyClient(botpy.Client):
         for handler in handlers:
             if await handler(api=self.api, message=message):
                 return
-            
+
+    # 监听普通消息事件
     async def on_message_create(self, message: Message):
         _log.info(message.author.username + " > " + message.content)
         if "sleep" in message.content:
