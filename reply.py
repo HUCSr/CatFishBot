@@ -25,16 +25,16 @@ def match (message,matching_message) :
 # print (match ("这只皮靴号码大了。那只号码合适","这只皮靴号码不小，那只更合适"))
 
 def reply (message,reply_acceptance_threshold,reply_acceptance_probability) :
-    with open("recource/reply.json", 'r', encoding='utf-8') as t:
+    with open("resource/reply.json", 'r', encoding='utf-8') as t:
         reply = json.load(t)
     for msg in reply:
-        if match (msg,message) <= reply_acceptance_threshold:
+        if match (msg,message[0]) >= reply_acceptance_threshold:
             if len(message[1]) > 0:
                 Image = message[1][0]
             else :
                 Image = "NoImage"
             for image in reply[msg]:
-                if match (image,Image) <= reply_acceptance_threshold:
+                if match (image,Image) >= reply_acceptance_threshold:
                     if random.randint(1, 100) <= reply_acceptance_probability:
                         index = random.randint (0,len(reply[msg][image]) - 1)
                         return reply[msg][image][index]

@@ -14,7 +14,7 @@ from botpy.message import Message
 from threading import Thread
 
 import command
-import reply
+import Reply
 
 ###### 变量区
 
@@ -98,13 +98,14 @@ class MyClient(botpy.Client):
         for file in message.attachments:
             if file.content_type[:5] == "image":
                 Image.append (file.url)
+        ThisMessage.append (Image)
                 
-        event = reply.reply (ThisMessage,reply_acceptance_threshold//2,min((reply_acceptance_probability * 3) // 2,100))
+        event = Reply.reply (ThisMessage,reply_acceptance_threshold//2,min((reply_acceptance_probability * 3) // 2,100))
         
         if event != None:
-            message.reply(content=event[0])
+            await message.reply(content=event[0])
             for Image in event[1:]:
-                message.reply(image=Image)
+                await message.reply(image=Image)
 
     # 监听普通消息事件
     async def on_message_create(self, message: Message):
@@ -122,19 +123,20 @@ class MyClient(botpy.Client):
         for file in message.attachments:
             if file.content_type[:5] == "image":
                 Image.append (file.url)
-                
+        ThisMessage.append (Image)
+
         # 有 reply_triggering_probability% 概率触发复读
         if random.randint(1,100) <= reply_triggering_probability:
-            event = reply.reply (ThisMessage,reply_acceptance_threshold,reply_acceptance_probability)
+            event = Reply.reply (ThisMessage,reply_acceptance_threshold,reply_acceptance_probability)
             if event != None:
-                message.reply(content=event[0])
-                for Image in event[1:]:
-                    message.reply(image=Image)
+                await message.reply(content=event[0])
+                for Image in event[1]:
+                    await message.reply(image=Image)
         
         # 存储复读消息
-        ThisMessage.append (Image)
+        
         if LastMessage != None:
-            with open("recource/reply.json", 'r', encoding='utf-8') as t:
+            with open("resource/reply.json", 'r', encoding='utf-8') as t:
                 reply = json.load(t)
             if reply.get (LastMessage[0]) == None:
                 reply[LastMessage[0]] = {}
@@ -146,7 +148,7 @@ class MyClient(botpy.Client):
                 if reply[LastMessage[0]].get("NoImage") == None:
                     reply[LastMessage[0]]["NoImage"] = []
                 reply[LastMessage[0]]["NoImage"].append (ThisMessage)
-            with open("recource/reply.json", 'w', encoding='utf-8') as t:
+            with open("resource/reply.json", 'w', encoding='utf-8') as t:
                 json.dump(reply, t)
         LastMessage = ThisMessage
         
