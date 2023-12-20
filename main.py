@@ -78,8 +78,6 @@ class MyClient(botpy.Client):
         await self.api.post_message(channel_id="634999476", content="测试")
 
 if __name__ == "__main__":
-    timer = Thread(target=Timer)
-    timer.setDaemon(True)
     # 通过预设置的类型，设置需要监听的事件通道
     # intents = botpy.Intents.none()
     # intents.public_guild_messages=True
