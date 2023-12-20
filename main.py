@@ -70,6 +70,8 @@ class MyClient(botpy.Client):
         for handler in handlers:
             if await handler(api=self.api, message=message):
                 return
+        if message.content.find ("毛玉") != -1:
+            await message.reply(content="(>ω<)~")
 
     # 监听普通消息事件
     async def on_message_create(self, message: Message):
