@@ -20,11 +20,14 @@ def match (message,matching_message) :
         cos_numerator += words_list_A[words] * words_list_B[words]
         cos_denominator_A += words_list_A[words] * words_list_A[words]
         cos_denominator_B += words_list_B[words] * words_list_B[words]
+    if cos_denominator_A == 0 or cos_denominator_B == 0:
+        return 0
     return round (cos_numerator * 100 / (math.sqrt(cos_denominator_A) * math.sqrt(cos_denominator_B)))
 
 # print (match ("这只皮靴号码大了。那只号码合适","这只皮靴号码不小，那只更合适"))
 
 def reply (message,reply_acceptance_threshold,reply_acceptance_probability) :
+    print ("检测复读中...")
     with open("resource/reply.json", 'r', encoding='utf-8') as t:
         reply = json.load(t)
     for msg in reply:

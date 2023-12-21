@@ -21,15 +21,15 @@ import Reply
 # 上一次的消息
 LastMessage = None
 
-# reply 触发概率
-reply_triggering_probability = 90
-# reply 接受阈值
-reply_acceptance_threshold = 50
-# reply 接受概率
-reply_acceptance_probability = 50
-
 test_config = read(os.path.join(os.path.dirname(__file__), "config.yaml"))
 _log = logging.get_logger()
+
+# reply 触发概率
+reply_triggering_probability = test_config["reply_triggering_probability"]
+# reply 接受阈值
+reply_acceptance_threshold = test_config["reply_acceptance_threshold"]
+# reply 接受概率
+reply_acceptance_probability = test_config["reply_acceptance_probability"]
 
 #####
 
@@ -79,6 +79,8 @@ class MyClient(botpy.Client):
 
     # 监听at事件
     async def on_at_message_create(self, message: Message):
+        if message.content == None:
+            message.content = ""
         _log.info("[" + message.channel_id + "] " + message.author.username + " > " + message.content)
         if "sleep" in message.content:
             await asyncio.sleep(10)
@@ -100,57 +102,62 @@ class MyClient(botpy.Client):
                 Image.append (file.url)
         ThisMessage.append (Image)
                 
-        event = Reply.reply (ThisMessage,reply_acceptance_threshold//2,min((reply_acceptance_probability * 3) // 2,100))
+        event = Reply.reply (ThisMessage,test_config["reply_acceptance_threshold"]//2,min((test_config["reply_acceptance_probability"] * 3) // 2,100))
         
         if event != None:
-            await message.reply(content=event[0])
-            for Image in event[1:]:
+            if event[0] != '':
+                await message.reply(content=event[0])
+            for Image in event[1]:
                 await message.reply(image=Image)
 
     # 监听普通消息事件
     async def on_message_create(self, message: Message):
         global LastMessage
-        global reply_triggering_probability
-        global reply_acceptance_threshold
-        global reply_acceptance_probability
+
+        if message.content == None:
+            message.content = ""
 
         _log.info(message.author.username + " > " + message.content)
-        if "sleep" in message.content:
-            await asyncio.sleep(10)
         
-        ThisMessage = [message.content]
-        Image = []
-        for file in message.attachments:
-            if file.content_type[:5] == "image":
-                Image.append (file.url)
-        ThisMessage.append (Image)
-
-        # 有 reply_triggering_probability% 概率触发复读
-        if random.randint(1,100) <= reply_triggering_probability:
-            event = Reply.reply (ThisMessage,reply_acceptance_threshold,reply_acceptance_probability)
-            if event != None:
-                await message.reply(content=event[0])
-                for Image in event[1]:
-                    await message.reply(image=Image)
-        
-        # 存储复读消息
-        
-        if LastMessage != None:
-            with open("resource/reply.json", 'r', encoding='utf-8') as t:
-                reply = json.load(t)
-            if reply.get (LastMessage[0]) == None:
-                reply[LastMessage[0]] = {}
-            if len(LastMessage[1]) > 0:
-                if reply[LastMessage[0]].get(LastMessage[1][0]) == None:
-                    reply[LastMessage[0]][LastMessage[1][0]] = []
-                reply[LastMessage[0]][LastMessage[1][0]].append (ThisMessage)
-            else :
-                if reply[LastMessage[0]].get("NoImage") == None:
-                    reply[LastMessage[0]]["NoImage"] = []
-                reply[LastMessage[0]]["NoImage"].append (ThisMessage)
-            with open("resource/reply.json", 'w', encoding='utf-8') as t:
-                json.dump(reply, t)
-        LastMessage = ThisMessage
+        # if "sleep" in message.content:
+        #     await asyncio.sleep(10)
+            
+        if not ("<@!2269423776287172301>" in message.content):
+            ThisMessage = [message.content]
+            Image = []
+            for file in message.attachments:
+                if file.content_type[:5] == "image":
+                    Image.append (file.url)
+            ThisMessage.append (Image)
+            # 有 reply_triggering_probability% 概率触发复读
+            
+            if random.randint(1,100) <= test_config["reply_triggering_probability"]:
+                event = Reply.reply (ThisMessage,test_config["reply_acceptance_threshold"],test_config["reply_acceptance_probability"])
+                if event != None:
+                    if event[0] != '':
+                        await message.reply(content=event[0])
+                    for Image in event[1]:
+                        print (Image)
+                        await message.reply(image="gchat.qpic.cn/qmeetpic/667997494006418337/634999476-2817895720-DF87BDE3395D0DD6A128918F13891355/0")
+            
+            # 存储复读消息
+            
+            if LastMessage != None:
+                with open("resource/reply.json", 'r', encoding='utf-8') as t:
+                    reply = json.load(t)
+                if reply.get (LastMessage[0]) == None:
+                    reply[LastMessage[0]] = {}
+                if len(LastMessage[1]) > 0:
+                    if reply[LastMessage[0]].get(LastMessage[1][0]) == None:
+                        reply[LastMessage[0]][LastMessage[1][0]] = []
+                    reply[LastMessage[0]][LastMessage[1][0]].append (ThisMessage)
+                else :
+                    if reply[LastMessage[0]].get("NoImage") == None:
+                        reply[LastMessage[0]]["NoImage"] = []
+                    reply[LastMessage[0]]["NoImage"].append (ThisMessage)
+                with open("resource/reply.json", 'w', encoding='utf-8') as t:
+                    json.dump(reply, t)
+            LastMessage = ThisMessage
         
     async def test (self) :
         await self.api.post_message(channel_id="634999476", content="测试")
