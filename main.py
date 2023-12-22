@@ -70,6 +70,17 @@ async def weak_up(api: BotAPI, message: Message, params=None):
     else :
         return False
 
+@Commands("词云")
+async def word_cloud(api: BotAPI, message: Message, params=None):
+    event = command.word_cloud()
+    if event != None:
+        txt = "聊天中出现次数排名前十的词是:\n"
+        for word in event:
+            txt += word[0] + "<" + str (word[1]) + ">\n"
+        await message.reply(content=txt)
+        return True
+    else :
+        return False
 
 
 class MyClient(botpy.Client):
@@ -88,6 +99,7 @@ class MyClient(botpy.Client):
             sign_in,
             sleep,
             weak_up,
+            word_cloud,
         ]
         for handler in handlers:
             if await handler(api=self.api, message=message):

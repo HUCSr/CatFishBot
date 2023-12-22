@@ -1,6 +1,8 @@
 import os
 import json
 import datetime
+import jieba
+
 # 打卡模块
 def sign_in(userID) :
     if os.path.exists("user/signin/"+str(userID)+".json") == False:
@@ -113,3 +115,25 @@ def weak_up (userID) :
         with open("user/sleep/"+str(userID)+".json", 'w', encoding='utf-8') as t:
             json.dump(User, t)
         return [Sleep_Hour,Sleep_Minute,Sleep_Second]
+    
+# 词云模块
+def word_cloud () :
+    wordCloud = {}
+    with open("resource/reply.json", 'r', encoding='utf-8') as t:
+        reply = json.load(t)
+    with open("resource/filterwords.json", 'r', encoding='utf-8') as t:
+        filter = json.load(t)
+    for msg in reply:
+        message = list (jieba.cut(msg))
+        for word in message:
+            if wordCloud.get (word) == None:
+                wordCloud[word] = 0
+            wordCloud[word] += 1
+    sorted_wordCloud = dict(sorted(wordCloud.items(), key=lambda x: -x[1]))
+    wordCloud = []
+    for word in sorted_wordCloud:
+        if len (wordCloud) >= 10:
+            break
+        if filter.get (word) == None:
+            wordCloud.append ([word,sorted_wordCloud[word]])
+    return wordCloud
