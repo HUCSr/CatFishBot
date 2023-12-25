@@ -14,7 +14,9 @@ from botpy.message import Message
 from threading import Thread
 
 import command
-import Reply
+import daily
+import chat
+import fluffyball
 
 ###### 变量区
 
@@ -36,7 +38,7 @@ reply_acceptance_probability = test_config["reply_acceptance_probability"]
 @Commands("打卡")
 async def sign_in(api: BotAPI, message: Message, params=None):
     # params 是我指令后面的东西
-    event = command.sign_in(message.author.id)
+    event = daily.sign_in(message.author.id)
     if event != None:
         if len(event) == 1:
             await message.reply(content="今天你已经打过卡了哦")
@@ -48,7 +50,7 @@ async def sign_in(api: BotAPI, message: Message, params=None):
 
 @Commands("睡觉")
 async def sleep(api: BotAPI, message: Message, params=None):
-    event = command.sleep(message.author.id)
+    event = daily.sleep(message.author.id)
     if event != None:
         if event:
             await message.reply(content="晚安~")
@@ -60,7 +62,7 @@ async def sleep(api: BotAPI, message: Message, params=None):
 
 @Commands("起床")
 async def weak_up(api: BotAPI, message: Message, params=None):
-    event = command.weak_up(message.author.id)
+    event = daily.weak_up(message.author.id)
     if event != None:
         if len(event) == 3:
             await message.reply(content="早上好~,你这次睡了 " + str(event[0]) + " 小时 " + str (event[1]) + " 分钟 " + str (event[2]) + " 秒")
@@ -72,16 +74,37 @@ async def weak_up(api: BotAPI, message: Message, params=None):
 
 @Commands("词云")
 async def word_cloud(api: BotAPI, message: Message, params=None):
-    event = command.word_cloud()
+    if params[:2] != "过滤":
+        event = chat.word_cloud()
+        if event != None:
+            txt = "聊天中出现次数排名前 "  + str (len (event))+ " 的词是:\n"
+            for word in event:
+                txt += word[0] + "<" + str (word[1]) + ">\n"
+            await message.reply(content=txt)
+            return True
+        else :
+            return False
+    else :
+        wordList = params[2:].split (' ')
+        with open("resource/filterwords.json", 'r', encoding='utf-8') as t:
+            filter = json.load(t)
+        for word in wordList:
+            filter[word] = 1
+        with open("resource/filterwords.json", 'w', encoding='utf-8') as t:
+            json.dump(filter, t)
+        await message.reply(content="添加成功")
+        
+@Commands("毛球")
+async def fluffy_ball(api: BotAPI, message: Message, params=None):
+    message.author.username
+    event = fluffyball.info(message.author.id)
     if event != None:
-        txt = "聊天中出现次数排名前十的词是:\n"
-        for word in event:
-            txt += word[0] + "<" + str (word[1]) + ">\n"
-        await message.reply(content=txt)
+        await message.reply(content="用户 " + message.author.username + "\n" + 
+                            "当前毛球数: " + str(int(event[0])) + "\n" + 
+                            "当前毛球生产效率: " + str (event[1]) + "/s")
         return True
     else :
         return False
-
 
 class MyClient(botpy.Client):
     async def on_ready(self):
@@ -100,6 +123,7 @@ class MyClient(botpy.Client):
             sleep,
             weak_up,
             word_cloud,
+            fluffy_ball,
         ]
         for handler in handlers:
             if await handler(api=self.api, message=message):
@@ -114,7 +138,7 @@ class MyClient(botpy.Client):
                 Image.append (file.url)
         ThisMessage.append (Image)
                 
-        event = Reply.reply (ThisMessage,test_config["reply_acceptance_threshold"]//2,min((test_config["reply_acceptance_probability"] * 3) // 2,100))
+        event = chat.reply (ThisMessage,test_config["reply_acceptance_threshold"]//2,min((test_config["reply_acceptance_probability"] * 3) // 2,100))
         
         if event != None:
             if event[0] != '':
@@ -144,7 +168,7 @@ class MyClient(botpy.Client):
             # 有 reply_triggering_probability% 概率触发复读
             
             if random.randint(1,100) <= test_config["reply_triggering_probability"]:
-                event = Reply.reply (ThisMessage,test_config["reply_acceptance_threshold"],test_config["reply_acceptance_probability"])
+                event = chat.reply (ThisMessage,test_config["reply_acceptance_threshold"],test_config["reply_acceptance_probability"])
                 if event != None:
                     if event[0] != '':
                         await message.reply(content=event[0])

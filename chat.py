@@ -1,8 +1,32 @@
-# 复读模块,用于查询和匹配复读
+import os
 import json
-import random
+import datetime
 import jieba
+import random
 import math
+
+# 词云模块
+def word_cloud () :
+    wordCloud = {}
+    with open("resource/reply.json", 'r', encoding='utf-8') as t:
+        reply = json.load(t)
+    with open("resource/filterwords.json", 'r', encoding='utf-8') as t:
+        filter = json.load(t)
+    for msg in reply:
+        message = list (jieba.cut(msg))
+        for word in message:
+            if wordCloud.get (word) == None:
+                wordCloud[word] = 0
+            wordCloud[word] += 1
+    sorted_wordCloud = dict(sorted(wordCloud.items(), key=lambda x: -x[1]))
+    wordCloud = []
+    for word in sorted_wordCloud:
+        if len (wordCloud) >= 20:
+            break
+        if filter.get (word) == None:
+            wordCloud.append ([word,sorted_wordCloud[word]])
+    return wordCloud
+
 
 def match (message,matching_message) :
     message = list (jieba.cut(message))
