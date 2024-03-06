@@ -14,9 +14,10 @@ from botpy.message import Message
 from threading import Thread
 
 import command
+import CatFishsh
 import daily
 import chat
-import fluffyball
+import touhouquestion
 
 ###### 变量区
 
@@ -93,18 +94,100 @@ async def word_cloud(api: BotAPI, message: Message, params=None):
         with open("resource/filterwords.json", 'w', encoding='utf-8') as t:
             json.dump(filter, t)
         await message.reply(content="添加成功")
-        
-@Commands("毛球")
-async def fluffy_ball(api: BotAPI, message: Message, params=None):
-    message.author.username
-    event = fluffyball.info(message.author.id)
+
+@Commands("查看毛玉玉")
+async def catfishshInfo(api: BotAPI, message: Message, params=None):
+    event = CatFishsh.info(message.author.id)
     if event != None:
-        await message.reply(content="用户 " + message.author.username + "\n" + 
-                            "当前毛球数: " + str(int(event[0])) + "\n" + 
-                            "当前毛球生产效率: " + str (event[1]) + "/s")
+        await message.reply(content=event)
         return True
     else :
         return False
+@Commands("种植毛玉玉")
+async def catfishfishPlant(api: BotAPI, message: Message, params=None):
+    if params.isdigit():
+        event = CatFishsh.plant(message.author.id,int(params))
+        if event != None:
+            await message.reply(content=event)
+            return True
+        else :
+            return False
+    else:
+        await message.reply(content="参数错误")
+        return False
+    
+@Commands("收获毛玉玉")
+async def catfishfishHarvest(api: BotAPI, message: Message, params=None):
+    event = CatFishsh.harvest(message.author.id)
+    if event != None:
+        await message.reply(content=event)
+        return True
+    else :
+        return False
+
+@Commands("升级毛玉玉")
+async def catfishfishLevelUP(api: BotAPI, message: Message, params=None):
+    event = CatFishsh.levelUP(message.author.id)
+    if event != None:
+        await message.reply(content=event)
+        return True
+    else :
+        return False
+    
+touhou_question_channel = {}
+
+@Commands("知识问答")
+async def touhou_question(api: BotAPI, message: Message, params=None):
+    global touhou_question_channel
+    if touhou_question_channel.get(message.channel_id) == None:
+        touhou_question_channel[message.channel_id] = -1
+    if touhou_question_channel[message.channel_id] == -1:
+        questionIndex = touhouquestion.query (params)
+        if questionIndex == "-1":
+            await message.reply(content="未知的问题难度或问题类型")
+            return True
+        touhou_question_channel[message.channel_id] = int(questionIndex)
+        with open("resource/touhouquestion.json", 'r', encoding='utf-8') as t:
+            question = json.load(t)
+        str = "提问: " +  question[questionIndex]["question"] + "\n"
+    
+        ch = 'A'
+        for options in question[questionIndex]["options"]:
+            str += ch + ". " + options + "\n"
+            ch = chr(ord(ch) + 1)
+        str += "难度: " + question[questionIndex]["difficulty"] + "\n"
+        str += "类型: " + question[questionIndex]["class"]
+        await message.reply(content=str)
+    else :
+        await message.reply(content="游戏正在进行中哦~")
+        return True
+
+@Commands("选")
+async def touhou_answer(api: BotAPI, message: Message, params=None):
+    global touhou_question_channel
+    if touhou_question_channel.get(message.channel_id) == None:
+        touhou_question_channel[message.channel_id] = -1
+    if touhou_question_channel[message.channel_id] == -1:
+        await message.reply(content="这里没有要回答的问题哦~")
+        return True
+    else :
+        
+        questionIndex = str(touhou_question_channel[message.channel_id])
+        if len (params) != 1:
+            return True
+        if ord(params[0]) < ord('A') or ord(params[0]) > ord('Z'):
+            return True
+        else :
+            with open("resource/touhouquestion.json", 'r', encoding='utf-8') as t:
+                question = json.load(t)
+            if ord(params[0]) - ord ('A') + 1 > len(question[questionIndex]["options"]) :
+                return True
+            if ord(params[0]) - ord ('A') == question[questionIndex]["answer"] :
+                await message.reply(content="<@!" + str (message.author.id) + "> " + " 回答正确\n" + question[questionIndex]["description"])
+            else :
+                await message.reply(content="<@!" + str (message.author.id) + "> " + " 回答错误\n" + question[questionIndex]["description"])
+            touhou_question_channel[message.channel_id] = -1
+            return True
 
 class MyClient(botpy.Client):
     async def on_ready(self):
@@ -123,13 +206,18 @@ class MyClient(botpy.Client):
             sleep,
             weak_up,
             word_cloud,
-            fluffy_ball,
+            touhou_question,
+            touhou_answer,
+            catfishshInfo,
+            catfishfishPlant,
+            catfishfishHarvest,
+            catfishfishLevelUP,
         ]
         for handler in handlers:
             if await handler(api=self.api, message=message):
                 return
-        if message.content.find ("毛玉") != -1:
-            await message.reply(content="(>ω<)~")
+        # if message.content.find ("毛玉") != -1:
+        #     await message.reply(content="(>ω<)~")
         
         ThisMessage = [message.content]
         Image = []
@@ -140,7 +228,7 @@ class MyClient(botpy.Client):
                 
         event = chat.reply (ThisMessage,test_config["reply_acceptance_threshold"]//2,min((test_config["reply_acceptance_probability"] * 3) // 2,100))
         
-        if event != None:
+        if message.content[0] != '/' and event != None:
             if event[0] != '':
                 await message.reply(content=event[0])
             for Image in event[1]:
@@ -199,6 +287,7 @@ class MyClient(botpy.Client):
         await self.api.post_message(channel_id="634999476", content="测试")
 
 if __name__ == "__main__":
+    
     # 通过预设置的类型，设置需要监听的事件通道
     # intents = botpy.Intents.none()
     # intents.public_guild_messages=True
